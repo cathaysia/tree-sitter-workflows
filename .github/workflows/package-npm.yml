@@ -40,17 +40,18 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
       - name: Set up NodeJS
         uses: actions/setup-node@v4
         with:
-          cache: npm
+          cache: pnpm
           node-version: ${{inputs.node-version}}
       - name: Set up Emscripten
         uses: mymindstorm/setup-emsdk@v14
         with:
           version: ${{inputs.emscripten-version}}
       - name: Install dependencies
-        run: npm i --omit peer --omit optional
+        run: pnpm i --no-optional
       - name: Regenerate parser
         if: ${{inputs.generate}}
         shell: bash
@@ -58,14 +59,14 @@ jobs:
           while read -r grammar; do
             grammar_dir=$(dirname "$grammar")
             cd "$grammar_dir"
-            npm x -- tree-sitter generate
+            pnpm tree-sitter generate
             cd - > /dev/null
           done < <(find . -name grammar.js -not -path './node_modules/*' -not -path './.build/*')
       - name: Build Wasm binaries
         shell: bash
         run: |-
           while read -r grammar; do
-            npm x -- tree-sitter build --wasm "${grammar%/grammar.js}"
+            pnpm tree-sitter build --wasm "${grammar%/grammar.js}"
           done < <(find . -name grammar.js -not -path './node_modules/*')
       - name: Upload binaries
         uses: actions/upload-artifact@v4
@@ -86,13 +87,14 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
       - name: Set up NodeJS
         uses: actions/setup-node@v4
         with:
-          cache: npm
+          cache: pnpm
           node-version: ${{inputs.node-version}}
       - name: Install dependencies
-        run: npm i --omit peer --omit optional
+        run: pnpm i --no-optional
       - name: Regenerate parser
         if: ${{inputs.generate}}
         shell: bash
@@ -100,11 +102,11 @@ jobs:
           while read -r grammar; do
             grammar_dir=$(dirname "$grammar")
             cd "$grammar_dir"
-            npm x -- tree-sitter generate
+            pnpm tree-sitter generate
             cd - > /dev/null
           done < <(find . -name grammar.js -not -path './node_modules/*' -not -path './.build/*')
       - name: Build x64 binary
-        run: npm x -- prebuildify --arch x64 -t 20.9.0
+        run: pnpm prebuildify --arch x64 -t 20.9.0
       - name: Set up cross-compilation
         if: runner.os == 'Linux'
         run: |-
@@ -113,7 +115,7 @@ jobs:
           printf '%s\n' >> "$GITHUB_ENV" \
             'CC=aarch64-linux-gnu-gcc' 'CXX=aarch64-linux-gnu-g++'
       - name: Build arm64 binary
-        run: npm x -- prebuildify --arch arm64 -t 20.9.0
+        run: pnpm prebuildify --arch arm64 -t 20.9.0
       - name: Upload binaries
         uses: actions/upload-artifact@v4
         with:
@@ -131,10 +133,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
       - name: Set up NodeJS
         uses: actions/setup-node@v4
         with:
-          cache: npm
+          cache: pnpm
           node-version: ${{inputs.node-version}}
           registry-url: https://registry.npmjs.org/
       - name: Download binaries
@@ -149,6 +152,6 @@ jobs:
         continue-on-error: true
         run: mv -v prebuilds/*.wasm .
       - name: Publish to npm
-        run: npm publish
+        run: pnpm publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.NODE_AUTH_TOKEN}}
