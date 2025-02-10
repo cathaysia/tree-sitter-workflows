@@ -23,10 +23,6 @@ on:
         description: The version of the Ubuntu runner image
         default: ${{vars.UBUNTU_VERSION || '22.04'}}
         type: string
-      generate:
-        description: Generate the parser artifacts
-        default: false
-        type: boolean
     secrets:
       NODE_AUTH_TOKEN:
         description: An authentication token for npm
@@ -55,16 +51,6 @@ jobs:
           version: ${{inputs.emscripten-version}}
       - name: Install dependencies
         run: pnpm i --no-optional
-      - name: Regenerate parser
-        if: ${{inputs.generate}}
-        shell: bash
-        run: |
-          while read -r grammar; do
-            grammar_dir=$(dirname "$grammar")
-            cd "$grammar_dir"
-            pnpm tree-sitter generate
-            cd - > /dev/null
-          done < <(find . -name grammar.js -not -path './node_modules/*' -not -path './.build/*')
       - name: Build Wasm binaries
         shell: bash
         run: |-
@@ -101,16 +87,6 @@ jobs:
           node-version: ${{inputs.node-version}}
       - name: Install dependencies
         run: pnpm i --no-optional
-      - name: Regenerate parser
-        if: ${{inputs.generate}}
-        shell: bash
-        run: |
-          while read -r grammar; do
-            grammar_dir=$(dirname "$grammar")
-            cd "$grammar_dir"
-            pnpm tree-sitter generate
-            cd - > /dev/null
-          done < <(find . -name grammar.js -not -path './node_modules/*' -not -path './.build/*')
       - name: Build x64 binary
         run: pnpm prebuildify --arch x64 -t 20.9.0
       - name: Set up cross-compilation
