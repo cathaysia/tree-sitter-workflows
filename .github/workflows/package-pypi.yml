@@ -63,7 +63,7 @@ jobs:
       matrix:
         include:
           - { os: windows-latest, cibw_arch: AMD64 }
-          - { os: windows-latest, cibw_arch: ARM64 }
+          # - { os: windows-latest, cibw_arch: ARM64 }
           - { os: ubuntu-latest, cibw_arch: x86_64 }
           - { os: ubuntu-latest, cibw_arch: aarch64, qemu_arch: arm64 }
           - { os: macos-latest, cibw_arch: arm64 }
