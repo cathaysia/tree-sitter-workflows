@@ -7,7 +7,7 @@ on:
         description: The Rust toolchain
         default: ${{vars.RUST_TOOLCHAIN || 'stable'}}
         type: string
-      path:
+      working-directory:
         description: crate path
         default: "."
         type: string
@@ -26,7 +26,7 @@ jobs:
         with:
           toolchain: ${{inputs.rust-toolchain}}
       - name: Publish to crates.io
-        working-directory: ${{inputs.path}}
+        working-directory: ${{inputs.working-directory}}
         env:
           CARGO_REGISTRY_TOKEN: ${{secrets.CARGO_REGISTRY_TOKEN}}
         run: |
