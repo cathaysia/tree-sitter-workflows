@@ -15,6 +15,10 @@ on:
         description: The Python version
         default: ${{vars.PYTHON_VERSION || '3.11'}}
         type: string
+      working-directory:
+        description: package path
+        default: "."
+        type: string
     secrets:
       # TODO: make optional when pypi/warehouse#11096 is fixed
       PYPI_API_TOKEN:
@@ -34,6 +38,7 @@ jobs:
         with:
           python-version: ${{inputs.python-version}}
       - name: Install dependencies
+        working-directory: ${{inputs.working-directory}}
         run: |-
           JQ_SCRIPT='.dependencies | del(."node-addon-api", ."node-gyp-build") | length > 0'
           if jq -e "$JQ_SCRIPT" package.json >/dev/null; then
@@ -42,12 +47,13 @@ jobs:
       - name: Install dependencies
         run: pip install --upgrade pip build setuptools wheel
       - name: Build sources
+        working-directory: ${{inputs.working-directory}}
         run: python -mbuild -n -s
       - name: Upload sources
         uses: actions/upload-artifact@v4
         with:
           name: dist-sources
-          path: dist/*.tar.gz
+          path: ${{inputs.working-directory}}/dist/*.tar.gz
           retention-days: 2
 
   build_wheels:
@@ -58,10 +64,10 @@ jobs:
         include:
           - { os: windows-latest, cibw_arch: AMD64 }
           - { os: windows-latest, cibw_arch: ARM64 }
-          - { os: ubuntu-latest,  cibw_arch: x86_64 }
-          - { os: ubuntu-latest,  cibw_arch: aarch64, qemu_arch: arm64 }
-          - { os: macos-latest,   cibw_arch: arm64 }
-          - { os: macos-latest,   cibw_arch: x86_64 }
+          - { os: ubuntu-latest, cibw_arch: x86_64 }
+          - { os: ubuntu-latest, cibw_arch: aarch64, qemu_arch: arm64 }
+          - { os: macos-latest, cibw_arch: arm64 }
+          - { os: macos-latest, cibw_arch: x86_64 }
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -71,11 +77,13 @@ jobs:
         with:
           platforms: ${{matrix.qemu_arch}}
       - name: Install dependencies
+        working-directory: ${{inputs.working-directory}}
         run: npm i --ignore-scripts --omit dev --omit peer --omit optional
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.22
         with:
-          output-dir: dist
+          output-dir: ${{inputs.working-directory}}/dist
+          package-dir: ${{inputs.working-directory}}
         env:
           CIBW_ARCHS: ${{matrix.cibw_arch}}
           CIBW_SKIP: "*-musllinux_aarch64"
@@ -83,7 +91,7 @@ jobs:
       - name: Upload wheel artifacts
         uses: actions/upload-artifact@v4
         with:
-          path: dist/*.whl
+          path: ${{inputs.working-directory}}/dist/*.whl
           name: dist-wheels-${{matrix.os}}-${{matrix.cibw_arch}}
           retention-days: 2
 
@@ -100,12 +108,13 @@ jobs:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          path: dist
+          path: ${{inputs.working-directory}}/dist
           pattern: dist-*
           merge-multiple: true
       - name: Check build artifacts
-        run: ls -l dist
+        run: ls -l ${{inputs.working-directory}}/dist
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{secrets.PYPI_API_TOKEN}}
+          packages-dir: ${{inputs.working-directory}}
