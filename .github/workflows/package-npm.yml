@@ -54,7 +54,7 @@ jobs:
           version: ${{inputs.emscripten-version}}
       - name: Install dependencies
         run: |
-          cd "${{inputs.path}}" && pnpm i --no-optional
+          cd "${{inputs.path}}" && pnpm i --no-optional --dangerously-allow-all-builds
       - name: Build Wasm binaries
         shell: bash
         run: |-
@@ -82,7 +82,6 @@ jobs:
         uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
         with:
-          version: ${{inputs.pnpm-version}}
           run_install: false
       - name: Set up NodeJS
         uses: actions/setup-node@v4
@@ -91,7 +90,7 @@ jobs:
           node-version: ${{inputs.node-version}}
       - name: Install dependencies
         run: |
-          cd "${{inputs.path}}" && pnpm i --no-optional
+          cd "${{inputs.path}}" && pnpm i --no-optional --dangerously-allow-all-builds
       - name: Build x64 binary
         run: cd "${{inputs.path}}" && pnpm prebuildify --arch x64 -t 20.9.0
       - name: Set up cross-compilation
@@ -99,10 +98,9 @@ jobs:
         run: |-
           sudo apt-get update
           sudo apt-get install g++-aarch64-linux-gnu
+          printf '%s\n' >> "$GITHUB_ENV" \
+            'CC=aarch64-linux-gnu-gcc' 'CXX=aarch64-linux-gnu-g++'
       - name: Build arm64 binary
-        env:
-          CC: aarch64-linux-gnu-gcc
-          CXX: aarch64-linux-gnu-g++
         run: cd "${{inputs.path}}" && pnpm prebuildify --arch arm64 -t 20.9.0
       - name: Upload binaries
         uses: actions/upload-artifact@v4
